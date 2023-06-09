@@ -1,29 +1,61 @@
 <template>
-  <div>
+  <div class="wrapper">
+    <div class="compilation">
+      <h1>Фильмы 2023 года</h1>
+      <compilation-films :films="films23" v-if="films23.length > 0"></compilation-films>
+      <loading-component v-else></loading-component>
+
+    </div>
+    <div class="compilation">
+      <h1>Сериалы 2023 года</h1>
+      <compilation-films :films="serials23" v-if="serials23.length > 0"></compilation-films>
+      <loading-component v-else></loading-component>
+    </div>
   </div>
 </template>
 
 <script>
-import API from '@/api/api';
 import { useMainStore } from '@/store';
 import { defineComponent } from 'vue';
+import CompilationFilms from '@/components/CompilationFilms.vue'
+import LoadingComponent from '@/components/LoadingComponent.vue';
 
 export default defineComponent({
+  components: {
+    CompilationFilms,
+    LoadingComponent
+  },
   data() {
     return {
-      store: useMainStore()
+      store: useMainStore(),
+      films23: [],
+      serials23: []
     }
   },
-  mounted(){
-    this.test()
+  mounted() {
+    this.store.getFilmsByYear(2023).then(res => this.films23 = res)
+    setTimeout(() => {
+      this.store.getSerialsByYear(2023).then(res => this.serials23 = res)
+    }, 350);
   },
   methods: {
-    test() {
-        API.getByTitle('Магическая битва').then(res=>console.log(res))
-      // API.getAll('all', 1, 'меха').then(res => console.log(res))
-    }
+    
   }
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 5rem;
+  margin-top: 70px;
+
+  .compilation {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+}
+</style>

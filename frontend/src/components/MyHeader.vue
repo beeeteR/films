@@ -2,23 +2,7 @@
     <header>
         <div class="wrapper">
             <nav class="navbar">
-                <div class="social" @mouseover="openDrop()" @mouseout="closeDrop()">
-                    <p class="social__dropdown">Подписаться на новости</p>
-                    <div class="social__links" ref="droplist">
-                        <div class="social__link">
-                            <a href="vk.com">
-                                <img src="../img/icons8-vk.svg" alt="vk">
-                                <p>ВКонтакте</p>
-                            </a>
-                        </div>
-                        <div class="social__link">
-                            <a href="twitter.com">
-                                <img src="../img/icons8-twitter.svg" alt="twitter">
-                                <p>Твиттер</p>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <font-awesome-icon :icon="['fas', 'bars']" size="xl" class="bars" @click="choiseStateSideBar()" />
                 <div class="logo">
                     <router-link to="/">
                         <img src="../img/icons8-logo-50.png" alt="logo">
@@ -26,11 +10,20 @@
                 </div>
                 <div class="nav__items">
                     <div class="nav__item">
-                        <router-link to="/">
-                            <p class="nav__item-text">
-                                Досмотреть
-                            </p>
-                        </router-link>
+                        <div class="search" :class="{ active: searched }">
+                            <input type="text" class="inp-search" v-model="searchText" ref="inpSearch">
+                            <div class="searched__films">
+                                <router-link class="searched__film" v-for="film in searchedFilms" :key="film.date"
+                                    :to="`/film/${film.kinopoisk_id}`" @click="searchToInit()">
+                                    {{ film.info.rus }} {{ film.info.year }} {{ film.serial == '1' ? 'Сериал' : '' }}
+                                </router-link>
+                            </div>
+                        </div>
+                        <font-awesome-icon :icon="['fas', 'magnifying-glass']" size="lg" ref="search" @click="searchInpOpen"
+                            style="cursor: pointer;" />
+                    </div>
+                    <div class="nav__item">
+                        <font-awesome-icon :icon="['far', 'bell']" size="lg" style="cursor: pointer;" />
                     </div>
                     <div class="nav__item">
                         <router-link to="/">
@@ -45,20 +38,65 @@
     </header>
 </template>
 <script>
-export default {
+import { useMainStore } from "@/store"
+import { defineComponent } from "vue"
+
+export default defineComponent({
+    data() {
+        return {
+            store: useMainStore(),
+            searched: false,
+            searchText: '',
+            stateSideBar: true,
+            searchedFilms: []
+        }
+    },
     methods: {
-        openDrop() {
-            this.$refs.droplist.classList.add('drop-active')
+        searchInpOpen() {
+            this.searched = this.searched ? false : true
+            this.$refs.inpSearch.focus()
         },
-        closeDrop() {
-            this.$refs.droplist.classList.remove('drop-active')
+        choiseStateSideBar() {
+            this.stateSideBar = !this.stateSideBar
+            this.$emit('choiseStateSideBar', this.stateSideBar)
+        },
+        searchToInit() {
+            this.searched = false
+            this.searchText = ''
+        }
+    },
+    watch: {
+        searchText() {
+            if (this.searchText.length > 2) {
+                setTimeout(() => {
+                    this.store.getByTitle(this.searchText).then(res => this.searchedFilms = res)
+                }, 400);
+
+            } else {
+                this.searchedFilms = []
+            }
         }
     }
-}
+})
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 header {
     background-color: #121214;
+    position: fixed;
+    width: 100%;
+    z-index: 5;
+}
+
+.inp-search {
+    border: none;
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 0.8rem;
+    font-size: 1.1rem;
+}
+
+.active {
+    transform: scale(100%) !important;
 }
 
 .navbar {
@@ -68,57 +106,19 @@ header {
     align-items: center;
     padding: 0.5rem 0;
 
-    .social {
-        position: relative;
-        padding: 1rem;
+    .bars {
+        padding: 0.75rem;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 300ms;
 
-        .social__dropdown {
-            cursor: pointer;
-            transition: all 300ms;
-            position: relative;
-            background-color: #121214;
-            padding: 1.6rem 0;
-            z-index: 2;
+        &:hover {
+            transform: scale(110%);
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
-        .social__links {
-            position: absolute;
-            left: 50%;
-            transform: translate(-50%, -150%);
-            display: flex;
-            flex-direction: column;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0px 0px 10px 3px #1E1F22;
-            transition: all 400ms;
-            z-index: 1;
-
-            .social__link {
-
-                a {
-                    display: flex;
-                    gap: 1rem;
-                    align-items: center;
-                    padding: 0.5rem;
-                    padding-right: 2rem;
-                    background-color: #2B2D31;
-                    transition: all 200ms;
-
-
-                    img {
-                        width: 36px;
-                        height: 36px;
-                    }
-
-                    &:hover {
-                        background-color: #414249;
-                    }
-                }
-            }
-        }
-
-        &:hover .social__dropdown {
-            text-decoration: underline;
+        &:active {
+            background-color: rgba(255, 255, 255, 0.15);
         }
     }
 
@@ -136,20 +136,58 @@ header {
 
     .nav__items {
         display: flex;
+        align-items: center;
         gap: 1rem;
 
         .nav__item {
             .nav__item-text {
                 transition: all 300ms;
-                &:hover{
+
+                &:hover {
                     color: #808489;
                     text-decoration: underline;
                 }
             }
+
+            &:nth-child(1) {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
         }
     }
-    .drop-active {
-        transform: translate(-50%, 0%) !important;
+
+    .search {
+        position: relative;
+        transition: all 300ms;
+        transform: scaleX(0);
+        transform-origin: right;
+
+        .searched__films {
+            position: absolute;
+            z-index: 10;
+            top: 37px;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0.5rem;
+
+            .searched__film {
+                padding: 0.5rem 1rem;
+                background-color: #121214;
+                border-bottom: 1px solid white;
+                transition: all 300ms;
+
+                &:nth-child(1) {
+                    border-top: 1px solid white;
+                }
+
+                &:hover {
+                    background-color: #28282c;
+                }
+            }
+        }
     }
+
 }
 </style>

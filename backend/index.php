@@ -1,75 +1,50 @@
 <?php
+session_start();
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: *');
 header('Access-Control-Allow-Methods: *');
 header('Access-Control-Allow-Credentials: true');
 header('Content-type: application/json');
 
-require_once './includes/functions.php';
+require_once './includes/API.php';
 
+// http://localhost/films/backend/?user&id=1
+
+// $location = $_SERVER['SERVER_NAME'] . '/films/backend';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $queries = explode('&', $_SERVER['QUERY_STRING']);
+$view = $queries[0];
 
-$q = isset($_GET['q']) ? $_GET['q'] : '';
-$params = explode('/', $q);
-$type = count($params) > 0 ? $params[0] : null;
-$id = count($params) > 1 ? $params[1] : null;
+$query = [];
+foreach (array_slice($queries, 1) as $key) {
+    $elArr = explode('=', $key);
+    $query[$elArr[0]] = $elArr[1];
+}
 
-$email = null;
-$password = null;
+$queries = $query;
+unset($query);
 
+// $_SESSION['queries'] = [];
+// foreach (array_slice($queries, 1) as $key) {
+//     $elArr = explode('=', $key);
+//     $_SESSION['queries'][$elArr[0]] = $elArr[1];
+// }
+// $_SESSION['method'] = $method;
+
+// $newURL = "$location/views/user.php";
 
 switch ($method) {
     case 'GET':
-        if($type === 'users') {
-            if(isset($id)) {
-                getUserById($id);
-            }else if (count($queries) > 1) {
-                foreach($queries as $query) {
-                    $queryArray = explode('=', $query);
-
-                    switch ($queryArray[0]) {
-                        case 'email': $email = $queryArray[1];
-                            break;
-                        case 'password': $password = hash('md5', $queryArray[1]);
-                            break;
-                    }
-                }
-                if ($email && $password) {
-                    getUserByEmailPassword($email, $password);
-                }
-            }else {
-                getUsers();
-            }
+        if ($view == 'user') {
+            getUserById($_GET['id']);
         }
-        break;
-
     case 'POST':
-        if($type === 'users') {
+        if ($view == 'user') {
             addUser($_POST);
         }
-        break;
-    
     case 'PATCH':
-        if($type === 'users') {
-            if (isset($id)) {
-                $data = file_get_contents('php://input');
-                $data = json_decode($data, true);
-
-                updateUser($id, $data);
-            }
-        }
         break;
-
     case 'DELETE':
-        if($type === 'users') {
-            if (isset($id)) {
-                deleteUser($id);
-            }
-        }
         break;
-
-    default:
-    break;
 }

@@ -1,6 +1,7 @@
 <?php
 
-$location = $_SERVER['REQUEST_URI'];
+$name_project = 'films';
+$location = $_SERVER['DOCUMENT_ROOT']."/$name_project";
 
 
 ?>

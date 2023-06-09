@@ -1,15 +1,32 @@
 <template>
-  <my-header></my-header>
-  <router-view />
+  <my-header @choiseStateSideBar="choiseStateSideBar"></my-header>
+  <side-bar :state="stateSideBar"></side-bar>
+  <div class="content">
+    <div class="spacer" :class="{ 'spacer-slim': !stateSideBar }"></div>
+    <router-view />
+  </div>
 </template>
 <script>
+import { defineComponent } from "vue";
 import MyHeader from "./components/MyHeader.vue";
+import SideBar from "./components/SideBar.vue"
 
-export default {
+export default defineComponent({
   components: {
-    MyHeader
+    MyHeader,
+    SideBar
+  },
+  data() {
+    return {
+      stateSideBar: true
+    }
+  },
+  methods: {
+    choiseStateSideBar(state) {
+      this.stateSideBar = state
+    }
   }
-}
+})
 </script>
 <style lang="scss">
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
@@ -22,38 +39,33 @@ export default {
   color: white;
 }
 
-html, body {
-  width: 100vw;
-  height: 100vh;
+html,
+body {
   background-color: #2B2D31;
 }
 
 a {
   text-decoration: none;
   color: inherit;
+  user-select: none;
 }
 
 .wrapper {
   margin: 0 auto;
-  padding: 0 1rem;
-  @media screen and (max-width: 576px) {
-    width: 100%;
-  }
-  @media screen and (max-width: 768px) {
-    width: 540px;
-  }
-  @media screen and (max-width: 992px) {
-    width: 720px;
-  }
-  @media screen and (max-width: 1200px) {
-    width: 960px;
-  }
-  @media screen and (max-width: 1400px) {
-    width: 1140px;
-  }
-  @media screen and (min-width: 1400px) {
-    width: 1320px;
-  }
+  padding: 0 1.5rem;
+  width: 100%;
 }
 
+.content {
+  display: flex;
+}
+
+.spacer {
+  height: 100vh;
+  width: calc(242px + 1.5rem);
+}
+
+.spacer-slim {
+  width: calc(72px + 1.5rem) !important;
+}
 </style>

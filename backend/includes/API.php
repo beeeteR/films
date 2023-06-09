@@ -1,10 +1,10 @@
 <?php
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/rodionov/newregister/backend/includes/db.php';
+
+require_once $_SERVER['DOCUMENT_ROOT'].'/films/backend/includes/db.php';
 
 
-function getUsers()
-{
+function getUsers(){
 
     $users = R::findAll('users');
     $usersList = [];
@@ -24,8 +24,7 @@ function getUsers()
     echo json_encode($usersList);
 }
 
-function getUserById($id)
-{
+function getUserById($id){
     $user = R::load('users', $id);
 
     if (!$user['name']) {
@@ -41,8 +40,7 @@ function getUserById($id)
     }
 }
 
-function getUserByEmailPassword($email, $password)
-{
+function getUserByEmailPassword($email, $password){
     $user = R::findOne('users', 'email = ? and password = ?', [$email, $password]);
 
     if (!$user) {

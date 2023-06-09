@@ -1,10 +1,10 @@
 <?php
 
-include_once "rb.php";
+require_once $_SERVER['DOCUMENT_ROOT'].'/films/backend/includes/rb.php';
 
 $host = '127.0.0.1';
 $port = '3306';
-$dbname = 'rodionovregister';
+$dbname = 'films';
 $login = 'root';
 $password = '';
 
