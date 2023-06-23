@@ -10,26 +10,18 @@
                 </div>
                 <div class="nav__items">
                     <div class="nav__item">
-                        <div class="search" :class="{ active: searched }">
-                            <input type="text" class="inp-search" v-model="searchText" ref="inpSearch">
-                            <div class="searched__films">
-                                <router-link class="searched__film" v-for="film in searchedFilms" :key="film.date"
-                                    :to="`/film/${film.kinopoisk_id}`" @click="searchToInit()">
-                                    {{ film.info.rus }} {{ film.info.year }} {{ film.serial == '1' ? 'Сериал' : '' }}
-                                </router-link>
-                            </div>
-                        </div>
-                        <font-awesome-icon :icon="['fas', 'magnifying-glass']" size="lg" ref="search" @click="searchInpOpen"
-                            style="cursor: pointer;" />
+                        <my-search></my-search>
                     </div>
                     <div class="nav__item">
                         <font-awesome-icon :icon="['far', 'bell']" size="lg" style="cursor: pointer;" />
                     </div>
                     <div class="nav__item">
-                        <router-link to="/">
+                        <router-link :to="auth ? '/profile' : 'auth'">
                             <p class="nav__item-text">
-                                Профиль
+                                {{ auth ? auth.name : 'Войти' }}
                             </p>
+                            <font-awesome-icon :icon="[auth ? 'far' : 'fas', auth ? 'user' : 'right-to-bracket']"
+                                size="lg" />
                         </router-link>
                     </div>
                 </div>
@@ -40,63 +32,38 @@
 <script>
 import { useMainStore } from "@/store"
 import { defineComponent } from "vue"
+import MySearch from "./MySearch.vue"
 
 export default defineComponent({
+    components: {
+        MySearch
+    },
     data() {
         return {
             store: useMainStore(),
-            searched: false,
-            searchText: '',
             stateSideBar: true,
-            searchedFilms: []
         }
     },
     methods: {
-        searchInpOpen() {
-            this.searched = this.searched ? false : true
-            this.$refs.inpSearch.focus()
-        },
         choiseStateSideBar() {
             this.stateSideBar = !this.stateSideBar
             this.$emit('choiseStateSideBar', this.stateSideBar)
-        },
-        searchToInit() {
-            this.searched = false
-            this.searchText = ''
         }
     },
-    watch: {
-        searchText() {
-            if (this.searchText.length > 2) {
-                setTimeout(() => {
-                    this.store.getByTitle(this.searchText).then(res => this.searchedFilms = res)
-                }, 400);
-
-            } else {
-                this.searchedFilms = []
-            }
+    computed: {
+        auth() {
+            return this.store.user ? this.store.user : false
         }
     }
 })
 </script>
+
 <style lang="scss">
 header {
     background-color: #121214;
     position: fixed;
     width: 100%;
-    z-index: 5;
-}
-
-.inp-search {
-    border: none;
-    outline: none;
-    background-color: rgba(255, 255, 255, 0.05);
-    padding: 0.5rem 0.8rem;
-    font-size: 1.1rem;
-}
-
-.active {
-    transform: scale(100%) !important;
+    z-index: 100;
 }
 
 .navbar {
@@ -154,40 +121,13 @@ header {
                 align-items: center;
                 gap: 1rem;
             }
-        }
-    }
 
-    .search {
-        position: relative;
-        transition: all 300ms;
-        transform: scaleX(0);
-        transform-origin: right;
-
-        .searched__films {
-            position: absolute;
-            z-index: 10;
-            top: 37px;
-            left: 0;
-            display: flex;
-            flex-direction: column;
-            border-radius: 0.5rem;
-
-            .searched__film {
-                padding: 0.5rem 1rem;
-                background-color: #121214;
-                border-bottom: 1px solid white;
-                transition: all 300ms;
-
-                &:nth-child(1) {
-                    border-top: 1px solid white;
-                }
-
-                &:hover {
-                    background-color: #28282c;
-                }
+            &:last-child a {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
         }
     }
-
 }
 </style>

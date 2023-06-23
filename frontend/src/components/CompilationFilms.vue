@@ -4,7 +4,7 @@
             <font-awesome-icon :icon="['fas', 'chevron-left']" size="2xl" class="arrow" />
         </div>
         <div class="compilation__content">
-            <films-component v-for="film in currentFilms" :key="film.date" :film="film"></films-component>
+            <film-component v-for="film in currentFilms" :key="film.date" :film="film"></film-component>
         </div>
         <div class="arrow__wrapper" @click="listToNextFilms()">
             <font-awesome-icon :icon="['fas', 'chevron-right']" size="2xl" class="arrow" />
@@ -14,11 +14,11 @@
 
 <script>
 import { defineComponent } from "vue";
-import FilmsComponent from "./FilmsComponent.vue";
+import FilmComponent from "./FilmComponent.vue";
 
 export default defineComponent({
     components: {
-        FilmsComponent
+        FilmComponent
     },
     props: {
         films: {
@@ -54,7 +54,7 @@ export default defineComponent({
     },
     computed: {
         currentFilms() {
-            return this.films.slice(this.currentFilm, this.currentFilm + 5)
+            return this.films.slice(this.currentFilm, this.currentFilm + this.step)
         }
     }
 })
@@ -68,7 +68,7 @@ export default defineComponent({
 
     .compilation__content {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(v-bind('step'), 1fr);
         grid-template-rows: repeat(1, 1fr);
         column-gap: 1rem;
         align-items: center;

@@ -10,30 +10,39 @@
         <template v-else>
             <div>
                 <div class="player">
-                    <!-- <div class="studios" v-if="Object.keys(studios).length > 1">
-                        <button class="studio" v-for="studio in Object.keys(studios)" :key="studio"
-                            @click="selectedStudio = studios[studio]">{{ studio }}</button>
-                    </div>-->
+                    <h3>Выбрать озвучку:</h3>
+                    <div class="studios">
+                        <button class="studio" v-for="studio in studios" :key="studio.name"
+                            :class="{ 'selected__btn': studio.name.trim() == selectedStudio.trim() }"
+                            @click="selectedStudio = studio.name">{{
+                                studio.name
+                            }}</button>
+                    </div>
                     <div class="seasons" v-if="isSerial">
-                        <button class="season" v-for="seasonNum in Number(film[0].last_season)" :key="seasonNum"
+                        <button class="season" v-for="seasonNum in Object.keys(episodes)" :key="seasonNum"
                             :class="{ 'selected__btn': seasonNum == selectedSeason }"
                             @click="selectedSeason = seasonNum">Сезон {{ seasonNum
                             }}</button>
                     </div>
 
-                    <iframe :src="link" allowfullscreen frameborder="0" width="100%" height="600px" seamless
-                        v-if="studios"></iframe>
+                    <div class="frame__wrapper" v-if="studios.length">
+                        <iframe :src="link" allowfullscreen frameborder="0" width="100%" height="600px" seamless
+                            ref="iframe"></iframe>
+                    </div>
 
                     <div class="episodes" v-if="isSerial">
-                        <button class="episode" v-for="episodeNum in Number(film[0].last_episode)" :key="episodeNum"
-                            :class="{ 'selected__btn': episodeNum == selectedEpisode }"
+                        <button class="episode" v-for="episodeNum in Object.keys(this.episodes[this.selectedSeason])"
+                            :key="episodeNum" :class="{ 'selected__btn': episodeNum == selectedEpisode }"
                             @click="selectedEpisode = episodeNum">Серия {{
                                 episodeNum }}</button>
                     </div>
                 </div>
                 <h1 class="film__title">
                     <span>{{ film[0].info.rus }}</span>
-                    <span>{{ film[0].info.age + '+' }}</span>
+                    <span>
+                        <input type="button" class="inp__btn" value="Добавить в плейлист" @click="changeStateModal(true)">
+                        {{ film[0].info.age + '+' }}
+                    </span>
                 </h1>
                 <table class="film__info">
                     <tr>
@@ -84,6 +93,11 @@
                     </tr>
                 </table>
             </div>
+            <comments-film :kpID="Number(this.film[0].kinopoisk_id)"></comments-film>
+            <modal-add-to-playlist v-if="store.playlists" :opened="openedModal" :film="film[0]" :season="selectedSeason"
+                :episode="selectedEpisode" :studio="selectedStudio"
+                @closeModalAdd="changeStateModal(false)"></modal-add-to-playlist>
+            <create-playlist v-else :opened="openedModal" @closeModal="changeStateModal(false)"></create-playlist>
         </template>
     </div>
 </template>
@@ -91,11 +105,18 @@
 <script>
 import { useMainStore } from "@/store";
 import { defineComponent } from "vue";
+import API from "../api/api";
+import CommentsFilm from "../components/CommentsFilm.vue";
+import CreatePlaylist from "../components/CreatePlaylist.vue";
 import LoadingComponent from '../components/LoadingComponent.vue'
+import ModalAddToPlaylist from "../components/ModalAddToPlaylist.vue";
 
 export default defineComponent({
     components: {
-        LoadingComponent
+        LoadingComponent,
+        CommentsFilm,
+        ModalAddToPlaylist,
+        CreatePlaylist
     },
     data() {
         return {
@@ -106,25 +127,26 @@ export default defineComponent({
             selectedSeason: 1,
             selectedEpisode: 1,
             film: [],
-            studios: {},
+            studios: [],
             genres: [],
             actors: [],
+            episodes: [],
             time: { 'hour': 0, 'minutes': 0 },
             rating: { 'kp': { 'votes': 0, 'rating': 0 }, 'imdb': { 'votes': 0, 'rating': 0 } },
-            link: ''
+            link: '',
+            openedModal: false,
+            inPlaylist: false
         }
     },
     async mounted() {
-        await this.store.getById(this.$route.params.id).then(result => this.film = result.results)
-        this.parse()
-        this.loading = false
+        await this.store.getById(this.$route.params.id).then(({ results }) => this.film = results)
     },
     methods: {
         parse() {
             this.film.forEach(el => {
-                this.studios[`${el.studio ? el.studio : ''} ${el.translation}`] = el.link
+                this.studios.push({ 'name': `${el.studio ? el.studio : ''} ${el.translation}`, 'link': el.link })
             })
-            this.selectedStudio = Object.keys(this.studios)[0]
+            this.selectedStudio = this.studios[0].name
 
             this.rating.kp.rating = this.film[0].info.rating.rating_kp
             this.rating.kp.votes = this.film[0].info.rating.vote_num_kp
@@ -133,6 +155,7 @@ export default defineComponent({
 
             if (this.film[0].serial == 1) {
                 this.isSerial = true
+                this.episodes = this.film[0].episodes
             }
 
             this.genres = this.film[0].info.genre.split(',')
@@ -141,18 +164,65 @@ export default defineComponent({
             this.time['hour'] = Math.floor(this.film[0].info.time / 60 / 60)
             this.time['minutes'] = Math.floor(this.film[0].info.time / 60) - this.time['hour'] * 60
 
+            if (this.store.playlists) {
+                setTimeout(() => {
+                    this.store.playlists.forEach(playlist => {
+                        playlist.films.forEach(filmFromPlaylist => {
+                            if (filmFromPlaylist.id_kp == this.film[0].kinopoisk_id) {
+                                this.inPlaylist = filmFromPlaylist.id
+                                this.selectedEpisode = filmFromPlaylist.episode
+                                this.selectedSeason = filmFromPlaylist.season
+                                this.selectedStudio = filmFromPlaylist.studio
+                            }
+                        })
+                    })
+                }, 500);
+            }
             this.changeLink()
         },
         changeLink() {
-            this.link = this.isSerial ? `${this.studios[this.selectedStudio]}?season=${this.selectedSeason}&episode=${this.selectedEpisode}` : this.studios[this.selectedStudio]
+            let studioLink
+            this.studios.forEach(el => {
+                if (el.name.trim() == this.selectedStudio.trim()) {
+                    studioLink = el.link
+                    return
+                }
+            })
+            this.link = this.isSerial ? `${studioLink}?season=${this.selectedSeason}&episode=${this.selectedEpisode}` : studioLink
+            if (this.inPlaylist && this.isSerial) {
+                API.updateFilmInPlaylist(this.inPlaylist, this.selectedSeason, this.selectedEpisode)
+            }
+        },
+        changeEpisodes() {
+            this.film.forEach(el => {
+                if (this.selectedStudio.indexOf(el.translation) != -1) {
+                    this.episodes = el.episodes
+                    return
+                }
+            })
+        },
+        changeStateModal(value) {
+            this.openedModal = value
         }
     },
     watch: {
+        $route() {
+            this.parse()
+            window.location.reload()
+        },
         selectedSeason() {
             this.changeLink()
         },
         selectedEpisode() {
             this.changeLink()
+        },
+        selectedStudio() {
+            this.changeEpisodes()
+            this.changeLink()
+        },
+        film() {
+            this.parse()
+            this.loading = false
         }
     }
 })
@@ -161,7 +231,12 @@ export default defineComponent({
 <style lang="scss" scoped>
 .wrapper {
     margin-top: 70px;
+
     .player {
+        h3 {
+            margin-top: 1rem;
+        }
+
         button {
             padding: 0.8rem 0.5rem;
             color: black;
@@ -182,12 +257,19 @@ export default defineComponent({
             background-color: #181818 !important;
         }
 
-        .studios,
         .seasons,
         .episodes {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
             gap: 0.5rem;
+            padding: 1rem 0;
+        }
+
+        .studios {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            padding: 1rem 0;
         }
 
         .seasons {
@@ -201,9 +283,16 @@ export default defineComponent({
 
     .film__title {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 2rem;
         margin: 2rem 0;
+
+        span:nth-child(2) {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
     }
 
     .film__info {
@@ -231,5 +320,9 @@ export default defineComponent({
             }
         }
     }
+}
+
+#dropdown {
+    display: none !important;
 }
 </style>

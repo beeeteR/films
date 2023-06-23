@@ -2,8 +2,7 @@
     <div class="side__wrapper">
         <div class="side__content">
             <ul class="side__group">
-                <li class="side__item" @click="changeChoisedItem('home')"
-                    :class="{ 'side__item-active': choisedItem == 'home' }">
+                <li class="side__item" :class="{ 'side__item-active': link == 'home' }">
                     <router-link to="/" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
                         <div class="side__item-icon">
                             <font-awesome-icon :icon="['fas', 'house']" size="lg" />
@@ -11,18 +10,16 @@
                         <p class="side__item-text" v-show="state">Главная</p>
                     </router-link>
                 </li>
-                <li class="side__item" @click="changeChoisedItem('fire')"
-                    :class="{ 'side__item-active': choisedItem == 'fire' }">
-                    <router-link to="/" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
+                <li class="side__item" :class="{ 'side__item-active': link == 'trands' }">
+                    <router-link to="/trands" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
                         <div class="side__item-icon">
                             <font-awesome-icon :icon="['fas', 'fire']" size="lg" />
                         </div>
                         <p class="side__item-text" v-show="state">В тренде</p>
                     </router-link>
                 </li>
-                <li class="side__item" @click="changeChoisedItem('compass')"
-                    :class="{ 'side__item-active': choisedItem == 'compass' }">
-                    <router-link to="/" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
+                <li class="side__item" :class="{ 'side__item-active': link == 'filters' }">
+                    <router-link to="/filters" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
                         <div class="side__item-icon">
                             <font-awesome-icon :icon="['far', 'compass']" size="lg" />
                         </div>
@@ -32,18 +29,16 @@
             </ul>
             <span class="side__spacer"></span>
             <ul class="side__group">
-                <li class="side__item" @click="changeChoisedItem('eye')"
-                    :class="{ 'side__item-active': choisedItem == 'eye' }">
-                    <router-link to="/" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
+                <li class="side__item" :class="{ 'side__item-active': link == 'playlists' }">
+                    <router-link to="/playlists" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
                         <div class="side__item-icon">
                             <font-awesome-icon :icon="['far', 'eye']" size="lg" />
                         </div>
-                        <p class="side__item-text" v-show="state">Досмотреть</p>
+                        <p class="side__item-text" v-show="state">Плейлисты</p>
                     </router-link>
                 </li>
-                <li class="side__item" @click="changeChoisedItem('stopwatch')"
-                    :class="{ 'side__item-active': choisedItem == 'stopwatch' }">
-                    <router-link to="/" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
+                <li class="side__item" :class="{ 'side__item-active': link == 'later' }">
+                    <router-link to="/later" class="side__item-content" :class="{ 'side__item-content--hidden': !state }">
                         <div class="side__item-icon">
                             <font-awesome-icon :icon="['fas', 'stopwatch']" size="lg" />
                         </div>
@@ -78,20 +73,15 @@
 import { defineComponent } from "vue";
 
 export default defineComponent({
-    data() {
-        return {
-            choisedItem: 'home'
-        }
-    },
     props: {
         state: {
             type: Boolean,
             default: true
         }
     },
-    methods: {
-        changeChoisedItem(name) {
-            this.choisedItem = name
+    computed: {
+        link() {
+            return this.$route.name
         }
     }
 })

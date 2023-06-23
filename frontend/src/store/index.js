@@ -3,8 +3,9 @@ import API from '../api/api'
 
 export const useMainStore = defineStore('main', {
   state: () => ({
+    user: false,
     watchLater: [],
-    watching: [{ 'id': 143242, 'season': 1, 'episode': 1 }]
+    playlists: null
   }),
 
   getters: {
@@ -22,23 +23,34 @@ export const useMainStore = defineStore('main', {
       }
     },
     getFilmsByYear() {
-      return (year) => API.getAll('film', 1, '', '', year).then(res => this.removeDublicates(res.results))
+      return (year) => API.getAll('film', 1, '', '', year).then(res => this.removeDublicates(res?.results ? res.results : []))
     },
     getSerialsByYear() {
-      return (year) => API.getAll('serial', 1, '', '', year).then(res => this.removeDublicates(res.results))
+      return (year) => API.getAll('serial', 1, '', '', year).then(res => this.removeDublicates(res?.results ? res.results : []))
     },
     getById() {
       return (id) => API.getByKp(id)
     },
     getByTitle() {
-      return (title) => API.getByTitle(title).then(res =>  this.removeDublicates(res.results))
+      return (title) => API.getByTitle(title).then(res => this.removeDublicates(res?.results ? res.results : []))
     }
   },
 
   actions: {
-    addToWatchLater(id) {
-      if (!this.watchLater.includes(id))
-        this.watchLater.push(id)
+    changeWatchLater(kp, posterUrl, name, rating) {
+      let index = false
+      this.watchLater.forEach((el, i) => {
+        if (el.kp == kp) {
+          index = i
+        }
+      })
+      if (index != false) {
+        this.watchLater.splice(index, 1)
+        API.delWatchLater(this.user.id, kp)
+      } else {
+        this.watchLater.push({ 'kp': kp, 'posterUrl': posterUrl, 'name': name, 'rating': rating })
+        API.setWatchLater(this.user.id, kp, posterUrl, name, rating)
+      }
     }
   }
 })
