@@ -15,15 +15,24 @@
             </div>
         </div>
         <div class="comment__body">
-            {{ comment.text }}
+            <span class="answer__to" v-if="comment.is_answer">
+                Ответ пользователю <b class="answer__to-name">{{ answerToName }}</b>,
+            </span>
+            <span ref="commentText">
+                {{ comment.text }}
+            </span>
         </div>
         <div class="comment__btns">
             <span @click="answer(comment.id)">Ответить</span>
         </div>
         <div class="comment__answer__write">
-            <div class="write__comment" v-if="answerTo == comment.id">
-                <textarea placeholder="Написать ответ" v-model="answerText"></textarea>
-                <input type="button" value="Ответить" @click="sendAnswer()">
+            <div class="write__comment" v-if="answerBtnState || editBtnState">
+                <textarea placeholder="Написать ответ" v-model="answerText" v-if="answerBtnState" @keydown.enter="sendAnswer($event)"
+                    ref="answerArea"></textarea>
+                <textarea placeholder="Изменить комментарий" v-model="answerText" v-if="editBtnState" @keydown.enter="sendAnswer($event, 'edit')"
+                    ref="editArea"></textarea>
+                <input type="button" value="Ответить" v-if="answerBtnState" @click="sendAnswer(false)">
+                <input type="button" value="Отправить" v-if="editBtnState" @click="sendAnswer(false, 'edit')">
             </div>
         </div>
     </div>
@@ -38,6 +47,7 @@ import QuestionComponent from "./QuestionComponent.vue";
 
 
 export default defineComponent({
+    emits: ['sendAnswer', 'updateCommentaries'],
     components: {
         QuestionComponent
     },
@@ -49,6 +59,10 @@ export default defineComponent({
         error: {
             type: Boolean,
             default: false
+        },
+        commentItem: {
+            type: Object,
+            required: false
         }
     },
     data() {
@@ -56,22 +70,37 @@ export default defineComponent({
             store: useMainStore(),
             isAnwer: false,
             answerTo: '',
+            answerToName: '',
             answerText: '',
             stateQuestion: false,
-            textQuestion: 'Вы уверены, что удалить комментарий?'
+            textQuestion: 'Вы уверены, что удалить комментарий?',
+            answerBtnState: false,
+            editBtnState: false
+        }
+    },
+    mounted() {
+        if (this.comment.is_answer) {
+            if (this.commentItem.id == this.comment.answer_to_id)
+                this.answerToName = this.commentItem.user_name
+            else {
+                this.answerToName = this.commentItem.answers.find(el => el.id == this.comment.answer_to_id).user_name
+            }
         }
     },
     methods: {
         answer(commentID) {
             if (this.answerTo == commentID) {
                 this.answerTo = ''
+                this.answerBtnState = false
             } else {
                 this.answerTo = commentID
+                this.answerBtnState = true
             }
         },
-        sendAnswer() {
-            this.$emit('sendAnswer', { 'text': this.answerText, 'answerTo': this.answerTo })
-            if (!this.error) {
+        sendAnswer(event = false, edit = false) {
+            console.log(event);
+            this.$emit('sendAnswer', { 'text': this.answerText, 'answerTo': this.answerTo, 'edit': edit, 'id': this.comment.id })
+            if (this.error == false) {
                 this.answerTo = ''
                 this.answerText = ''
             }
@@ -80,7 +109,8 @@ export default defineComponent({
             this.stateQuestion = true
         },
         editComment() {
-            alert('еще не сделал')
+            this.editBtnState = !this.editBtnState
+            this.answerText = this.editBtnState ? this.$refs.commentText.innerText : ''
         },
         getAnswer(value) {
             if (value) {
@@ -103,8 +133,24 @@ export default defineComponent({
     watch: {
         error(newVal) {
             if (!newVal) {
-                this.answerTo = ''
-                this.answerText = ''
+                this.editBtnState = false
+                this.answerBtnState = false
+            }
+        },
+        editBtnState(newVal) {
+            if (newVal) {
+                this.answerBtnState = false
+                setTimeout(() => {
+                    this.$refs.editArea.focus()
+                }, 100)
+            }
+        },
+        answerBtnState(newVal) {
+            if (newVal) {
+                this.editBtnState = false
+                setTimeout(() => {
+                    this.$refs.answerArea.focus()
+                }, 100)
             }
         }
     }
@@ -132,7 +178,6 @@ export default defineComponent({
 
         .comment__user-btns {
             display: flex;
-            // gap: 0.5rem;
 
             span {
                 padding: 0.5rem;
@@ -151,6 +196,15 @@ export default defineComponent({
         .username {
             font-size: 1.1rem;
             font-weight: 700;
+        }
+    }
+
+    .answer__to {
+        font-style: italic;
+        font-weight: 300;
+
+        &-name {
+            color: darkcyan;
         }
     }
 }
@@ -172,6 +226,6 @@ export default defineComponent({
 }
 
 .answer {
-    padding-left: 4rem;
+    padding-left: 5rem;
 }
 </style>

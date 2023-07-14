@@ -15,15 +15,13 @@
             <input type="button" value="Добавить" class="inp__btn" @click="addFilmToPlaylist($event)">
             <question-component :state="stateQuestion" :question="textQuestion"
                 @getAnswer="getAnswer($event)"></question-component>
-            <warning-component :text="warningText" :opened="warningState"
-                @warningClosed="warningClosed()"></warning-component>
         </div>
         <div v-else>
             <create-playlist :opened="stateCreate" @closeModal="changeStateCreate()"
                 @settedPlaylist="settedPlaylist()"></create-playlist>
-
         </div>
     </div>
+    <warning-component :text="warningText" :opened="warningState" @warningClosed="warningClosed()"></warning-component>
 </template>
 
 <script>
@@ -35,6 +33,9 @@ import WarningComponent from "./WarningComponent.vue";
 import CreatePlaylist from "./CreatePlaylist.vue";
 
 export default defineComponent({
+    emits: [
+        'closeModalAdd'
+    ],
     components: {
         QuestionComponent,
         WarningComponent,
@@ -74,7 +75,8 @@ export default defineComponent({
             inPlaylist: false,
             warningState: false,
             warningText: '',
-            stateCreate: true
+            stateCreate: true,
+            createFilm: {}
         }
     },
     methods: {
@@ -87,7 +89,6 @@ export default defineComponent({
                     this.isOpen = false
                     this.choisedItem = null
                     this.selectOpen = false
-                    this.$emit('closeModalAdd')
                 }, 300);
             }
         },
@@ -102,8 +103,8 @@ export default defineComponent({
         },
         addFilmToPlaylist() {
             if (!this.choisedItem) {
-                this.textQuestion = 'Плейлист не выбран'
-                this.stateQuestion = true
+                this.warningText = 'Плейлист не выбран'
+                this.warningState = true
                 return
             }
 
@@ -123,7 +124,7 @@ export default defineComponent({
                 let rating = this.film.info.rating.rating_kp != 0 ? this.film.info.rating.rating_kp : this.film.info.rating.rating_imdb
                     != 0 ? this.film.info.rating.rating_imdb : 5.1
                 let isSerial = this.film.serial == 1 ? 1 : 0
-                API.setFilmInPlaylist(this.choisedItem.id, this.film.kinopoisk_id, `url(${this.film.info.poster})`, this.film.info.rus, rating, isSerial, this.season, this.episode, this.studio)
+                API.setFilmInPlaylist(this.choisedItem.id, this.film.kinopoisk_id, `url(${this.film.info.poster})`, this.film.info.rus, rating, isSerial ? 'Сериал' : 'Фильм', this.film.info.year, isSerial, this.season, this.episode, this.studio)
                 API.getUserPlaylists(this.store.user.id).then(res => this.store.playlists = res)
                 this.closeModal(null, true)
             } else if (this.inPlaylist.id == this.choisedItem.id) {
@@ -148,9 +149,10 @@ export default defineComponent({
                 != 0 ? this.film.info.rating.rating_imdb : 5.1
             let isSerial = this.film.serial == 1 ? 1 : 0
             setTimeout(() => {
-                API.setFilmInPlaylist(this.store.playlists[0].playlist_id, this.film.kinopoisk_id, `url(${this.film.info.poster})`, this.film.info.rus, rating, isSerial, this.season, this.episode, this.studio)
+                API.setFilmInPlaylist(this.store.playlists[0].playlist_id, this.film.kinopoisk_id, `url(${this.film.info.poster})`, this.film.info.rus, rating, isSerial ? 'Сериал' : 'Фильм', this.film.info.year, isSerial, this.season, this.episode, this.studio)
                 API.getUserPlaylists(this.store.user.id).then(res => this.store.playlists = res)
-            }, 500);
+                this.closeModal(null, true)
+            }, 500)
         }
     },
     watch: {
@@ -169,6 +171,11 @@ export default defineComponent({
                 this.warningText = `Фильм перемещен из "${this.inPlaylist.name}" в "${this.choisedItem.name}"`
             }
             this.closeModal(null, true)
+        },
+        isOpen(newVal) {
+            if (newVal == false) {
+                this.$emit('closeModalAdd')
+            }
         }
     }
 })

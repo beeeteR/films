@@ -32,10 +32,10 @@ export default defineComponent({
     }
   },
   mounted() {
-    store.getFilmsByYear(2023).then(res => this.films23 = res)
-    setTimeout(() => {
+    store.getFilmsByYear(2023).then(res => {
+      this.films23 = res
       store.getSerialsByYear(2023).then(res => this.serials23 = res)
-    }, 200);
+    })
   },
   methods: {
    

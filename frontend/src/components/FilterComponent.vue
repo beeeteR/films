@@ -61,9 +61,12 @@ export default defineComponent({
         }
     },
     watch: {
-        opened() {
-            if (this.opened != null) {
-                this.isOpen = this.opened
+        opened(newVal) {
+            this.isOpen = newVal
+        },
+        isOpen(newVal) {
+            if (newVal == true) {
+                this.$emit('openModal', this.type)
             }
         },
         choisedItem() {

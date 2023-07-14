@@ -44,14 +44,6 @@ export default defineComponent({
 .wrapper {
     margin-top: 70px;
 
-    .title {
-        text-align: center;
-        padding: 2rem;
-        margin: 2rem 0;
-        border-radius: 0.5rem;
-        border: 1px solid #242424;
-    }
-
     .playlists {
         display: grid;
         grid-template-columns: repeat(4, 1fr);

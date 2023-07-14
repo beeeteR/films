@@ -5,21 +5,29 @@
                 <h2 class="form__title">{{ register ? 'Регистрация' : 'Войти' }}</h2>
                 <div class="input__group">
                     <div class="input__item" v-show="register">
-                        <label for="name">Имя пользователя</label>
-                        <input type="text" id="name" name="name" autocomplete="on" v-model="name">
+                        <label>
+                            <input type="text" id="name" name="name" autocomplete="on" v-model="name">
+                            <span>Имя пользователя</span>
+                        </label>
                     </div>
                     <div class="input__item">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" autocomplete="on" v-model="email">
+                        <label for="email">
+                            <input type="email" id="email" name="email" autocomplete="on" v-model="email">
+                            <span>Email</span>
+                        </label>
                     </div>
                     <div class="input__item">
-                        <label for="password">Пароль</label>
-                        <input type="password" id="password" name="password" autocomplete="on" v-model="password">
+                        <label for="password">
+                            <input type="password" id="password" name="password" autocomplete="on" v-model="password">
+                            <span>Пароль</span>
+                        </label>
                     </div>
                     <div class="input__item" v-show="register">
-                        <label for="conf_password">Повторите пароль</label>
-                        <input type="password" id="conf_password" name="confPassword" autocomplete="on"
-                            v-model="confPassword">
+                        <label for="conf_password">
+                            <input type="password" id="conf_password" name="confPassword" autocomplete="on"
+                                v-model="confPassword">
+                            <span>Повторите пароль</span>
+                        </label>
                     </div>
                 </div>
                 <p class="reset__password">Забыли пароль?</p>
@@ -30,6 +38,7 @@
             </form>
         </div>
     </div>
+    <warning-component :opened="warningState" :text="warningText" @warningClosed="warningState = false"></warning-component>
 </template>
 
 <script>
@@ -37,8 +46,12 @@ import { defineComponent } from 'vue'
 import { useMainStore } from '@/store';
 import API from '@/api/api';
 import CONSTS from '@/consts'
+import WarningComponent from '@/components/WarningComponent.vue';
 
 export default defineComponent({
+    components: {
+        WarningComponent
+    },
     data() {
         return {
             store: useMainStore(),
@@ -47,6 +60,8 @@ export default defineComponent({
             email: '',
             password: '',
             confPassword: '',
+            warningText: '',
+            warningState: false,
         }
     },
     methods: {
@@ -54,12 +69,14 @@ export default defineComponent({
             if (this.register) {
                 let validation = this.validate()
                 if (validation != 'OK') {
-                    alert(validation)
+                    this.warningText = validation
+                    this.warningState = true
                     return
                 } else {
                     API.createUser(this.$refs.form).then(res => {
                         if (res == 'email exist') {
-                            alert('Аккаунт с такой почтой уже существует')
+                            this.warningText = 'Аккаунт с такой почтой уже существует'
+                            this.warningState = true
                         } else {
                             this.updateStateUser(res)
                         }
@@ -68,9 +85,11 @@ export default defineComponent({
             } else {
                 API.authUser(this.email, this.password).then(res => {
                     if (res == 'password error') {
-                        alert('Неверный пароль')
+                        this.warningText = 'Неверный пароль'
+                        this.warningState = true
                     } else if (res == 'email not exist') {
-                        alert('Аккаунта с такой электронной почтой не существует')
+                        this.warningText = 'Аккаунта с такой электронной почтой не существует'
+                        this.warningState = true
                     } else {
                         this.updateStateUser(res)
                     }
@@ -80,6 +99,9 @@ export default defineComponent({
         validate() {
             if (this.name.length < 4) {
                 return 'Длина имени меньше 4 символов'
+            }
+            if (this.name.length > 16) {
+                return 'Длина имени больше 16 символов'
             }
 
             let emailCharIndex = this.email.indexOf('@')
@@ -98,7 +120,11 @@ export default defineComponent({
             return 'OK'
         },
         async updateStateUser(userToken) {
-            await API.getUserByToken(userToken).then(res => this.store.user = res)
+            await API.getUserByToken(userToken).then(res => {
+                this.store.user = res.user
+                this.store.watchLater = res.watch_later
+                this.store.playlists = res.playlists
+            })
             this.$router.push({ path: '/profile' })
             this.$cookies.set(CONSTS.cookieName, userToken, '30d')
         }
@@ -142,70 +168,76 @@ export default defineComponent({
         .input__group {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 2.25rem;
 
             .input__item {
-                position: relative;
-
-                input {
-                    width: 100%;
-                }
-
                 label {
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    left: 1rem;
-                    cursor: text;
+                    position: relative;
 
-                    opacity: 0;
+                    span {
+                        position: absolute;
+                        left: 0.5rem;
+                        top: -0.25rem;
+                        cursor: text;
+                        padding: 0.25rem 0.5rem;
+                        border-radius: 0.5rem;
+                        background-color: rgb(21, 21, 21);
+                        transition: all 300ms;
+                        z-index: 5;
+                    }
 
-                    transition: all 300ms;
+                    input {
+                        width: 100%;
+
+                        &:focus~span {
+                            transform: translateY(-2.5rem);
+                            background-color: darkcyan;
+                        }
+                    }
                 }
             }
         }
+    }
 
-        .reset__password {
-            cursor: pointer;
-            text-decoration: underline;
-            text-align: right;
-            margin-bottom: 1rem;
-        }
+    .reset__password {
+        cursor: pointer;
+        text-decoration: underline;
+        text-align: right;
+        margin-bottom: 1rem;
+    }
 
-        .auth__btns {
-            width: 350px;
-            display: flex;
-            justify-content: space-between;
-            transition: all 300ms;
-
-            input {
-                cursor: pointer;
-
-                &:hover {
-                    transform: scale(105%);
-                    background-color: rgba(0, 0, 0, 0.4);
-                }
-            }
-        }
+    .auth__btns {
+        width: 350px;
+        display: flex;
+        justify-content: space-between;
+        transition: all 300ms;
 
         input {
-            font-size: 1.1rem;
-            padding: 0.5rem 1rem;
-            background-color: transparent;
-            border: 1px solid rgba(255, 255, 255, 1);
-            border-radius: 0.5rem;
-            transition: all 300ms;
+            cursor: pointer;
 
-            &:not([type=button]) {
-
-                &:focus,
-                &:focus-within,
-                &:focus-visible {
-                    border: 1px solid darkcyan !important;
-                    outline: none;
-                }
+            &:hover {
+                transform: scale(105%);
+                background-color: rgba(0, 0, 0, 0.4);
             }
+        }
+    }
 
+    input {
+        font-size: 1.1rem;
+        padding: 0.5rem 1rem;
+        background-color: transparent;
+        border: 1px solid rgba(255, 255, 255, 1);
+        border-radius: 0.5rem;
+        transition: all 300ms;
+
+        &:not([type=button]) {
+
+            &:focus,
+            &:focus-within,
+            &:focus-visible {
+                border: 1px solid darkcyan !important;
+                outline: none;
+            }
         }
     }
 }

@@ -27,6 +27,8 @@ export default defineComponent({
     methods: {
         logout() {
             this.store.user = false
+            this.store.watchLater = []
+            this.store.playlists = null
             this.$cookies.remove(CONSTS.cookieName)
             this.$router.push({ path: '/auth' })
         }

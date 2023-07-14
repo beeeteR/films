@@ -44,7 +44,7 @@ export default defineComponent({
 <style lang="scss" scoped>
 .warning {
     position: fixed;
-    top: -300px;
+    top: -700px;
     left: 1rem;
     z-index: 1000;
     padding: 1rem;

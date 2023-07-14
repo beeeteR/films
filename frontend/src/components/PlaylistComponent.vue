@@ -8,14 +8,13 @@
                 :style="{ 'backgroundImage': film.poster_url }"></div>
         </div>
         <div class="actions">
-            <router-link :to="`/playlist/${playlist.playlist_id}`">
-                <div class="action" title="Переименовать плейлист" @click="stateInput = true">
-                    <font-awesome-icon :icon="['fas', 'file-signature']" size="lg" />
-                </div>
-                <div class="action" title="Удалить плейлист" @click="delPlaylist()">
-                    <font-awesome-icon :icon="['fas', 'trash']" size="lg" />
-                </div>
-            </router-link>
+            <router-link :to="`/playlist/${playlist.playlist_id}`"></router-link>
+            <div class="action" title="Переименовать плейлист" @click="stateInput = true">
+                <font-awesome-icon :icon="['fas', 'file-signature']" size="lg" />
+            </div>
+            <div class="action" title="Удалить плейлист" @click="delPlaylist()">
+                <font-awesome-icon :icon="['fas', 'trash']" size="lg" />
+            </div>
         </div>
         <div class="input__wrapper">
             <div class="input__content">
@@ -30,6 +29,7 @@
         </div>
     </div>
     <question-component :question="textQuestion" :state="stateQuestion" @getAnswer="getAnswer($event)"></question-component>
+    <warning-component :text="warningText" :opened="warningState" @warningClosed="warningState = false"></warning-component>
 </template>
 
 <script>
@@ -37,10 +37,12 @@ import { defineComponent } from "vue";
 import API from "../api/api";
 import { useMainStore } from "../store";
 import QuestionComponent from "./QuestionComponent.vue";
+import WarningComponent from "./WarningComponent.vue";
 
 export default defineComponent({
     components: {
-        QuestionComponent
+        QuestionComponent,
+        WarningComponent
     },
     props: {
         playlist: {
@@ -54,7 +56,9 @@ export default defineComponent({
             stateQuestion: false,
             textQuestion: '',
             stateInput: false,
-            textInput: ''
+            textInput: '',
+            warningText: '',
+            warningState: false
         }
     },
     methods: {
@@ -64,10 +68,15 @@ export default defineComponent({
         },
         rename(event = false) {
             if (event == false || event.code == 'Enter') {
-                API.updateNamePlaylist(this.playlist.playlist_id, this.textInput)
-                API.getUserPlaylists(this.store.user.id).then(res => this.store.playlists = res)
-                this.stateInput = false
-                this.textInput = ''
+                if (this.textInput.length <= 2) {
+                    this.warningState = true
+                    this.warningText = 'Название плейлиста меньше 3 символов'
+                } else {
+                    API.updateNamePlaylist(this.playlist.playlist_id, this.textInput)
+                    API.getUserPlaylists(this.store.user.id).then(res => this.store.playlists = res)
+                    this.stateInput = false
+                    this.textInput = ''
+                }
             }
         },
         getAnswer(value) {
@@ -85,7 +94,7 @@ export default defineComponent({
 .inp__show {
     cursor: auto !important;
 
-    .actions a,
+    .actions,
     .playlist__title {
         top: -100% !important;
     }
@@ -117,7 +126,7 @@ export default defineComponent({
             top: -100%;
         }
 
-        .actions a {
+        .actions {
             top: 0;
         }
 
@@ -127,7 +136,7 @@ export default defineComponent({
     }
 
     .playlist__title,
-    .actions a,
+    .actions,
     .input__wrapper {
         position: absolute;
         top: 0;
@@ -146,13 +155,22 @@ export default defineComponent({
         transition: all 400ms;
     }
 
-    .actions a {
+    .actions {
         display: flex;
         gap: 3rem;
         top: 100%;
+
+        a {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
     }
 
     .action {
+        z-index: 5;
         padding: 1rem;
         background-color: cadetblue;
         border-radius: 50%;

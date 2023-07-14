@@ -72,7 +72,17 @@ a {
 
 .content {
   display: flex;
+  margin-bottom: 5rem;
 }
+
+.title {
+  text-align: center;
+  padding: 2rem;
+  margin: 2rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid #242424;
+}
+
 
 .spacer {
   height: 100vh;

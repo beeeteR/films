@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('poster_url');
             $table->string('name');
             $table->string('rating');
+            $table->string('type');
+            $table->integer('year');
             $table->boolean('is_serial');
             $table->integer('season')->nullable()->default(null);
             $table->integer('episode')->nullable()->default(null);

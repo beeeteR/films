@@ -94,10 +94,8 @@
                 </table>
             </div>
             <comments-film :kpID="Number(this.film[0].kinopoisk_id)"></comments-film>
-            <modal-add-to-playlist v-if="store.playlists" :opened="openedModal" :film="film[0]" :season="selectedSeason"
-                :episode="selectedEpisode" :studio="selectedStudio"
-                @closeModalAdd="changeStateModal(false)"></modal-add-to-playlist>
-            <create-playlist v-else :opened="openedModal" @closeModal="changeStateModal(false)"></create-playlist>
+            <modal-add-to-playlist :opened="openedModal" :film="film[0]" :season="selectedSeason" :episode="selectedEpisode"
+                :studio="selectedStudio" @closeModalAdd="changeStateModal(false)"></modal-add-to-playlist>
         </template>
     </div>
 </template>
@@ -107,7 +105,6 @@ import { useMainStore } from "@/store";
 import { defineComponent } from "vue";
 import API from "../api/api";
 import CommentsFilm from "../components/CommentsFilm.vue";
-import CreatePlaylist from "../components/CreatePlaylist.vue";
 import LoadingComponent from '../components/LoadingComponent.vue'
 import ModalAddToPlaylist from "../components/ModalAddToPlaylist.vue";
 
@@ -116,7 +113,6 @@ export default defineComponent({
         LoadingComponent,
         CommentsFilm,
         ModalAddToPlaylist,
-        CreatePlaylist
     },
     data() {
         return {
@@ -135,11 +131,20 @@ export default defineComponent({
             rating: { 'kp': { 'votes': 0, 'rating': 0 }, 'imdb': { 'votes': 0, 'rating': 0 } },
             link: '',
             openedModal: false,
-            inPlaylist: false
+            inPlaylist: false,
+            noSuch: false
         }
     },
     async mounted() {
-        await this.store.getById(this.$route.params.id).then(({ results }) => this.film = results)
+        await this.store.getById(this.$route.params.id).then(({ results }) => {
+            if (results) {
+                this.noSuch = false
+                this.film = results
+            } else {
+                this.noSuch = true
+                this.$router.push({ 'path': '/' })
+            }
+        })
     },
     methods: {
         parse() {
@@ -207,8 +212,12 @@ export default defineComponent({
     },
     watch: {
         $route() {
-            this.parse()
-            window.location.reload()
+            if (!this.noSuch) {
+                this.parse()
+                if (this.$route.path.includes('film')) {
+                    window.location.reload()
+                }
+            }
         },
         selectedSeason() {
             this.changeLink()
@@ -221,8 +230,10 @@ export default defineComponent({
             this.changeLink()
         },
         film() {
-            this.parse()
-            this.loading = false
+            if (!this.noSuch) {
+                this.parse()
+                this.loading = false
+            }
         }
     }
 })

@@ -11,12 +11,20 @@
                         <h3 class="film__name">
                             {{ isHome ? film.info.rus : film.name }}
                         </h3>
+                        <div class="short__info">
+                            <h4 class="type">
+                                {{ isHome ? film.serial ? 'Сериал' : 'Фильм' : film.type }}
+                            </h4>
+                            <h4 class="year">
+                                {{ isHome ? film.info.year : film.year }}
+                            </h4>
+                        </div>
                     </div>
                 </div>
             </router-link>
             <div class="film__actions" v-if="!isPlaylist">
                 <div class="film__action" title="Смотреть позже" :class="{ 'film__action-active': inStoreWatchLater }"
-                    @click="store.changeWatchLater(Number(isHome ? film.kinopoisk_id : isPlaylist ? film.id_kp : film.kp), bgImg, isHome ? film.info.rus : film.name, rating)">
+                    @click="store.changeWatchLater(Number(isHome ? film.kinopoisk_id : isPlaylist ? film.id_kp : film.kp), bgImg, isHome ? film.info.rus : film.name, rating, film.serial ? 'Сериал' : 'Фильм', film.info.year)">
                     <font-awesome-icon :icon="['fas', 'stopwatch']" size="lg" />
                 </div>
                 <div class="film__action" title="Поделиться">
@@ -132,6 +140,7 @@ export default defineComponent({
             .poster {
                 position: relative;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 width: 100%;
@@ -166,6 +175,18 @@ export default defineComponent({
                     position: absolute;
                     top: 1rem;
                     left: 1rem;
+                }
+
+                .short__info {
+                    position: absolute;
+                    bottom: 1rem;
+                    z-index: 1;
+                    display: flex;
+                    gap: 1rem;
+
+                    h4 {
+                        font-weight: 500;
+                    }
                 }
             }
         }

@@ -5,7 +5,8 @@ export const useMainStore = defineStore('main', {
   state: () => ({
     user: false,
     watchLater: [],
-    playlists: null
+    playlists: null,
+    searchList: []
   }),
 
   getters: {
@@ -37,7 +38,7 @@ export const useMainStore = defineStore('main', {
   },
 
   actions: {
-    changeWatchLater(kp, posterUrl, name, rating) {
+    changeWatchLater(kp, posterUrl, name, rating, type, year) {
       let index = false
       this.watchLater.forEach((el, i) => {
         if (el.kp == kp) {
@@ -48,8 +49,8 @@ export const useMainStore = defineStore('main', {
         this.watchLater.splice(index, 1)
         API.delWatchLater(this.user.id, kp)
       } else {
-        this.watchLater.push({ 'kp': kp, 'posterUrl': posterUrl, 'name': name, 'rating': rating })
-        API.setWatchLater(this.user.id, kp, posterUrl, name, rating)
+        this.watchLater.push({ 'kp': kp, 'posterUrl': posterUrl, 'name': name, 'rating': rating, 'type': type, 'year': year })
+        API.setWatchLater(this.user.id, kp, posterUrl, name, rating, type, year)
       }
     }
   }

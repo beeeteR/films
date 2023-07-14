@@ -1,6 +1,6 @@
 <template>
     <div class="search" :class="{ active: searched }">
-        <input type="text" class="inp-search" v-model="searchText" ref="inpSearch">
+        <input type="text" class="inp-search" v-model="searchText" ref="inpSearch" @keydown.enter="goToSearchView()">
         <div class="searched__films">
             <router-link class="searched__film" v-for="film in searchedFilms" :key="film.date"
                 :to="`/film/${film.kinopoisk_id}`" @click="searchToInit()">
@@ -31,12 +31,17 @@ export default defineComponent({
     methods: {
         searchToInit() {
             this.searched = false
+            this.searchedFilms = []
             this.searchText = ''
         },
         searchInpOpen() {
             this.searched = this.searched ? false : true
             this.$refs.inpSearch.focus()
         },
+        goToSearchView() {
+            this.$router.push({'path': `/searchedFilms/${this.searchText}`})
+            this.searchToInit()
+        }
     },
     watch: {
         searchText() {
@@ -78,7 +83,8 @@ export default defineComponent({
         top: 37px;
         left: 0;
         max-height: 300px;
-        overflow-y: scroll;
+        width: 100%;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         border-radius: 0.5rem;

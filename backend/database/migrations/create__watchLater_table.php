@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('poster_url');
             $table->string('name');
             $table->string('rating');
+            $table->string('type');
+            $table->integer('year');
         });
     }
 

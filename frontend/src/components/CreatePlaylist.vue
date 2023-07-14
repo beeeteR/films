@@ -6,14 +6,20 @@
             <input type="button" value="Создать" class="inp__btn" @click="createPlaylist()">
         </div>
     </div>
+    <warning-component :opened="warningState" :text="warningText" @warningClosed="warningState = false"></warning-component>
 </template>
 
 <script>
 import { defineComponent } from "vue";
 import API from "../api/api";
 import { useMainStore } from "../store";
+import WarningComponent from "./WarningComponent.vue";
 
 export default defineComponent({
+    emits: ['closeModal', 'settedPlaylist'],
+    components: {
+        WarningComponent
+    },
     props: {
         opened: {
             type: Boolean,
@@ -25,24 +31,26 @@ export default defineComponent({
             store: useMainStore(),
             isOpen: false,
             name: '',
-            validation: false
+            validation: false,
+            warningState: false,
+            warningText: ''
         }
     },
     methods: {
         createPlaylist() {
             if (!this.name) {
-                alert('Введите название')
+                this.warningText = 'Введите название'
+                this.warningState = true
             } else if (this.name.length > 30) {
-                alert('Название больше 30 символов')
+                this.warningText = 'Название больше 30 символов'
+                this.warningState = true
             } else {
                 API.setPlaylist(this.store.user.id, this.name)
                 this.validation = true
-                this.closeModal()
                 this.validation = false
                 API.getUserPlaylists(this.store.user.id).then(res => this.store.playlists = res)
-                setTimeout(() => {
-                    this.$emit('settedPlaylist')
-                }, 300);
+                this.$emit("settedPlaylist")
+                this.closeModal()
             }
         },
         closeModal(event = null) {
@@ -56,6 +64,7 @@ export default defineComponent({
                     this.$emit('closeModal')
                 }, 300);
             }
+
         }
     },
     watch: {

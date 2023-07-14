@@ -20,16 +20,13 @@ class Api extends Controller
     public function authUser(Request $request)
     {
         $email = $request->email;
-        $password = Hash::check('plain-text', $request->password);
+        $password = $request->password;
 
-        if (DB::table('users')->where('email', $email)->exists()) {
-            $user = DB::table('users')
-                ->where('email', $email)
-                ->where('password', $password)
-                ->select('remember_token')
-                ->first()->remember_token;
-            if ($user) {
-                return $user;
+        $user = DB::table('users')->where('email', $email)->first();
+
+        if ($user) {
+            if (Hash::check($password, $user->password)) {
+                return $user->remember_token;
             } else {
                 return 'password error';
             }
@@ -47,12 +44,12 @@ class Api extends Controller
 
         $watch_later = DB::table('watch_later')
             ->where('id_user', $user->id)
-            ->select('id_kp', 'poster_url', 'name', 'rating')
+            ->select('id_kp', 'poster_url', 'name', 'rating', 'type', 'year')
             ->get();
 
         $arrayWatchLater = [];
         foreach ($watch_later as $key) {
-            array_push($arrayWatchLater, ['kp' => $key->id_kp, 'posterUrl' => $key->poster_url, 'name' => $key->name, 'rating' => $key->rating]);
+            array_push($arrayWatchLater, ['kp' => $key->id_kp, 'posterUrl' => $key->poster_url, 'name' => $key->name, 'rating' => $key->rating, 'type' => $key->type, 'year' => $key->year]);
         }
 
         $playlists = $this->getUserPlaylists($request, $user->id);
@@ -61,7 +58,18 @@ class Api extends Controller
     }
     public function getComments(Request $request)
     {
+        function getFirstParrentId($comment)
+        {
+            if ($comment->is_answer) {
+                return getFirstParrentId(DB::table('commentaries')->where('id', $comment->answer_to_id)->first());
+            } else {
+                return $comment->id;
+            }
+        }
+
         $film_id = $request->film_id;
+
+        // Разбиение на комменты и ответы
 
         if (DB::table('commentaries')->where('id_film', $film_id)->exists()) {
             $comments = DB::table('commentaries')
@@ -69,11 +77,12 @@ class Api extends Controller
                 ->orderByDesc('datetime')
                 ->get();
 
-            $comments_without_answer = [];
+            $comment_with_answer = [];
             $answers = [];
             foreach ($comments as $key) {
                 if ($key->is_answer) {
                     array_push($answers, [
+                        'id_parent' => getFirstParrentId($key),
                         'id' => $key->id,
                         'id_film' => $key->id_film,
                         'id_user' => $key->id_user,
@@ -88,7 +97,7 @@ class Api extends Controller
                         'text' => $key->text
                     ]);
                 } else {
-                    array_push($comments_without_answer, [
+                    array_push($comment_with_answer, [
                         'id' => $key->id,
                         'id_film' => $key->id_film,
                         'id_user' => $key->id_user,
@@ -98,11 +107,23 @@ class Api extends Controller
                             ->first()
                             ->name,
                         'datetime' => $key->datetime,
-                        'text' => $key->text
+                        'text' => $key->text,
+                        'answers' => []
                     ]);
                 }
             }
-            return ['comments' => $comments_without_answer, 'answers' => $answers];
+
+            // Слияние комментов и ответов в один массив
+
+            foreach (array_reverse($answers) as $answer) {
+                foreach($comment_with_answer as $key => $comment) {
+                    if ($comment['id'] == $answer['id_parent']) {
+                        array_push($comment_with_answer[$key]['answers'], $answer);
+                    }
+                }
+            }
+
+            return $comment_with_answer;
         } else {
             return 0;
         }
@@ -161,11 +182,26 @@ class Api extends Controller
     }
     public function delComment(Request $request)
     {
-        $id = $request->input('id');
+        function delAnswers($comment)
+        {
+            $answers = DB::table('commentaries')
+                ->where('answer_to_id', $comment->id)
+                ->get();
 
-        DB::table('commentaries')
+            foreach ($answers as $answer) {
+                delAnswers($answer);
+                DB::table('commentaries')->where('id', $answer->id)->delete();
+            }
+        }
+
+        $id = $request->input('id');
+        $comment = DB::table('commentaries')
             ->where('id', $id)
-            ->delete();
+            ->first();
+
+        delAnswers($comment);
+        DB::table('commentaries')->where('id', $comment->id)->delete();
+
         return 'OK';
     }
     public function editComment(Request $request)
@@ -260,6 +296,8 @@ class Api extends Controller
         $poster_url = $request->input('poster_url');
         $name = $request->input('name');
         $rating = $request->input('rating');
+        $type = $request->input('type');
+        $year = $request->input('year');
         $is_serial = $request->input('is_serial');
         $season = null;
         $episode = null;
@@ -277,6 +315,8 @@ class Api extends Controller
                 'poster_url' => $poster_url,
                 'name' => $name,
                 'rating' => $rating,
+                'type' => $type,
+                'year' => $year,
                 'is_serial' => $is_serial,
                 'studio' => $studio
             ]);
@@ -337,6 +377,8 @@ class Api extends Controller
         $poster_url =  $request->input('poster_url');
         $name = $request->input('name');
         $rating = $request->input('rating');
+        $type = $request->input('type');
+        $year = $request->input('year');
 
         DB::table('watch_later')
             ->insert([
@@ -344,7 +386,9 @@ class Api extends Controller
                 'id_kp' => $id_kp,
                 'poster_url' => $poster_url,
                 'name' => $name,
-                'rating' => $rating
+                'rating' => $rating,
+                'type' => $type,
+                'year' => $year
             ]);
 
         return 'OK';

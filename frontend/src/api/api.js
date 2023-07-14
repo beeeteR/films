@@ -2,6 +2,27 @@ import axios from "axios"
 
 const token = '0c01d7b051c229c0a2452b14db6370e0'
 const apikey = '822bdf15-9f70-436d-ba85-e86d0cce0038'
+const delayCallFunc = 200
+let countCallFunc = 0
+
+async function repeatFunc(func, args) {
+    if (countCallFunc >= 3) {
+        alert('Что-то пошло не так перезагрузите страницу')
+        return false
+    }else {
+        countCallFunc += 1
+        return await func(...args).then(res => {
+            if (res) {
+                countCallFunc = 0
+                return res
+            }else {
+                setTimeout(() => {
+                    repeatFunc(func, args)
+                }, delayCallFunc + delayCallFunc * countCallFunc);
+            }
+        })
+    }
+}
 
 const API = {
 
@@ -11,8 +32,11 @@ const API = {
         return await axios.get(`https://bazon.cc/api/search?token=${token}&title=${title}`)
             .then(response => response.data)
             .catch(error => {
-                if (error.message == "Network Error") {
-                    return false
+                if (countCallFunc < 3) {
+                    let double = repeatFunc(this.getByTitle, [title])
+                    if (double) {
+                        return double.data
+                    }
                 } else {
                     console.log(error)
                 }
@@ -22,8 +46,11 @@ const API = {
         return await axios.get(`https://bazon.cc/api/search?token=${token}&kp=${kp}`)
             .then(response => response.data)
             .catch(error => {
-                if (error.message == "Network Error") {
-                    return false
+                if (countCallFunc < 3) {
+                    let double = repeatFunc(this.getByKp, [kp])
+                    if (double) {
+                        return double.data
+                    }
                 } else {
                     console.log(error)
                 }
@@ -33,8 +60,11 @@ const API = {
         return await axios.get(`https://bazon.cc/api/pages?token=${token}&type=${type}&cat=${cat}&resolution=${resolution}&year=${year}`)
             .then(response => response.data)
             .catch(error => {
-                if (error.message == "Network Error") {
-                    return false
+                if (countCallFunc < 3) {
+                    let double = repeatFunc(this.getAllPages, [type, cat, resolution, year])
+                    if (double) {
+                        return double.data
+                    }
                 } else {
                     console.log(error)
                 }
@@ -44,8 +74,11 @@ const API = {
         return await axios.get(`https://bazon.cc/api/json?token=${token}&type=${type}&page=${page}&cat=${cat}&resolution=${resolution}&year=${year}`)
             .then(response => response.data)
             .catch(error => {
-                if (error.message == "Network Error") {
-                    return false
+                if (countCallFunc < 3) {
+                    let double = repeatFunc(this.getAll, [type, page, cat, resolution, year])
+                    if (double) {
+                        return double.data
+                    }
                 } else {
                     console.log(error)
                 }
@@ -56,7 +89,10 @@ const API = {
             .then(response => response.data)
             .catch(error => {
                 if (error.message == "Network Error") {
-                    return false
+                    let double = repeatFunc(this.getAllTranslations, [])
+                    if (double) {
+                        return double.data
+                    }
                 } else {
                     console.log(error)
                 }
@@ -126,13 +162,15 @@ const API = {
                 console.log(error);
             })
     },
-    async setWatchLater(userID, kpID, posterUrl, name, rating) {
+    async setWatchLater(userID, kpID, posterUrl, name, rating, type, year) {
         let data = new FormData()
         data.append('id_user', userID)
         data.append('id_kp', kpID)
         data.append('poster_url', posterUrl)
         data.append('name', name)
         data.append('rating', rating)
+        data.append('type', type)
+        data.append('year', year)
 
         return await axios.post('http://127.0.0.1:8000/api/setWatchLater', data)
             .then(response => response.data)
@@ -235,13 +273,15 @@ const API = {
                 console.log(error);
             })
     },
-    async setFilmInPlaylist(playlistID, kpID, posterUrl, name, rating, isSerial, season=null, episode=null, studio=null) {
+    async setFilmInPlaylist(playlistID, kpID, posterUrl, name, rating, type, year, isSerial, season=null, episode=null, studio=null) {
         let data = new FormData()
         data.append('playlist_id', playlistID)
         data.append('id_kp', kpID)
         data.append('poster_url', posterUrl)
         data.append('name', name)
         data.append('rating', rating)
+        data.append('type', type)
+        data.append('year', year)
         data.append('is_serial', isSerial)
         data.append('season', season)
         data.append('episode', episode)
@@ -299,5 +339,6 @@ const API = {
             })
     },
 }
+
 
 export default API 

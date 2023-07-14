@@ -2,12 +2,13 @@
     <div class="comments__wrapper">
         <div class="write__comment">
             <h2>Напишите свой отзыв</h2>
-            <textarea placeholder="Написать отзыв" v-model="commentText"></textarea>
+            <textarea placeholder="Написать отзыв" @keydown.enter="sendComment(this.commentText)" v-model="commentText"></textarea>
             <input type="button" value="Добавить" @click="sendComment(this.commentText)">
         </div>
-        <div class="comments" v-if="commentaries.length">
-            <comment-item v-for="comment in currentComments" :key="comment.id" :comment="comment" :error="answerError" @sendAnswer="sendComment($event.text, $event.answerTo)" @updateCommentaries="getComments()"></comment-item>
-            
+        <div class="comments" v-if="commentaries">
+            <comment-with-answer v-for="comment in currentComments" :key="comment.id" :commentItem="comment" :answerError="answerError"
+                @sendAnswer="sendComment($event.text, $event.answerTo, $event.edit, $event.id)" @updateCommentaries="getComments()">
+            </comment-with-answer>
         </div>
         <h1 class="no__comments" v-else>Комменариев пока нет</h1>
         <warning-component :text="warningText" :opened="warningState" @warningClosed="warningClosed()"></warning-component>
@@ -18,12 +19,12 @@
 import { defineComponent } from "vue";
 import API from "../api/api";
 import { useMainStore } from "../store";
-import CommentItem from "./CommentItem.vue";
 import WarningComponent from "./WarningComponent.vue";
+import CommentWithAnswer from "./CommentWithAnswer.vue";
 
 export default defineComponent({
     components: {
-        CommentItem,
+        CommentWithAnswer,
         WarningComponent
     },
     props: {
@@ -39,7 +40,6 @@ export default defineComponent({
         return {
             store: useMainStore(),
             commentaries: [],
-            answers: [],
             commentText: '',
             pages: 0,
             currentPage: 0,
@@ -50,15 +50,12 @@ export default defineComponent({
     },
     methods: {
         getComments() {
-            API.getComments(this.kpID).then(res => {
-                this.commentaries = res.comments
-                this.answers = res.answers
-            })
+            API.getComments(this.kpID).then(res => this.commentaries = res)
         },
-        sendComment(text, answerTo=false) {
-            if (text.length < 30) {
+        sendComment(text, answerTo = false, edit, commentID=null) {
+            if (text.length < 3) {
                 this.answerError = true
-                this.warningText = 'Длина комментария меньше 30 символов'
+                this.warningText = 'Длина комментария меньше 3 символов'
                 this.warningState = true
             } else if (text.length > 3000) {
                 this.answerError = true
@@ -70,7 +67,10 @@ export default defineComponent({
                 if (answerTo) {
                     API.setComment(this.store.user.id, this.kpID, new Date().getTime(), text, 1, answerTo)
                     this.getComments()
-                } else {
+                } else if (edit) {
+                    API.editComment(commentID, text)
+                    this.getComments()
+                }else {
                     API.setComment(this.store.user.id, this.kpID, new Date().getTime(), text)
                     this.commentText = ''
                     this.getComments()
@@ -83,14 +83,14 @@ export default defineComponent({
         getParrentComment(comment) {
             if (comment.is_answer) {
                 this.getParrentComment(this.answers.find(el => el.id == comment.answer_to_id))
-            }else {
+            } else {
                 return comment.answer_to_id
             }
         }
     },
     computed: {
         currentComments() {
-            return this.commentaries.slice(0, 20)
+            return this.commentaries
         }
     }
 })

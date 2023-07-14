@@ -3,16 +3,19 @@
         <h1 class="title">Навигатор</h1>
         <div class="filters">
             <filter-component :items="['Фильм', 'Сериал', 'Мультфильм', 'Аниме']" :title="'Тип'" :type="'type'"
-                :opened="stateAllFilterDrop" @changeFilterValue="changeFilter($event)"></filter-component>
-            <filter-component :items="years" :title="'Год'" :type="'year'" :opened="stateAllFilterDrop"
-                @changeFilterValue="changeFilter($event)"></filter-component>
-            <filter-component :items="genres" :title="'Жанр'" :type="'genre'" :opened="stateAllFilterDrop"
-                @changeFilterValue="changeFilter($event)"></filter-component>
+                :opened="stateFiltersDrop.type" @changeFilterValue="changeFilter($event)" @openModal="changeStateFilters($event)"></filter-component>
+                
+            <filter-component :items="years" :title="'Год'" :type="'year'" :opened="stateFiltersDrop.years"
+                @changeFilterValue="changeFilter($event)" @openModal="changeStateFilters($event)"></filter-component>
+            
+            <filter-component :items="genres" :title="'Жанр'" :type="'genre'" :opened="stateFiltersDrop.genres"
+                @changeFilterValue="changeFilter($event)" @openModal="changeStateFilters($event)"></filter-component>
         </div>
-        <div class="filter__results" v-if="films.length">
+        <div class="filter__results" v-if="films.length && !notFound">
             <film-component v-for="film in filmsWithoutDublicates" :key="film.kinopoisk_id" :film="film"></film-component>
         </div>
-        <loading-component :height="200"></loading-component>
+        <loading-component :height="200" v-if="!notFound"></loading-component>
+        <h1 class="title" v-if="notFound">Ничего не найдено</h1>
     </div>
 </template>
 
@@ -33,7 +36,11 @@ export default defineComponent({
     data() {
         return {
             store: useMainStore(),
-            stateAllFilterDrop: null,
+            stateFiltersDrop: {
+                'type': false, 
+                'years': false, 
+                'genres': false
+            },
             filters: {
                 'type': null,
                 'year': null,
@@ -56,7 +63,8 @@ export default defineComponent({
             films: [],
             currentPage: 0,
             totalPages: 0,
-            loading: true
+            loading: true,
+            notFound: false
         }
     },
     mounted() {
@@ -68,15 +76,27 @@ export default defineComponent({
         document.addEventListener('scroll', this.throttle(this.trackPos, 250))
     },
     methods: {
-        closeAllDrops(event) {
-            this.$refs.navigator.querySelectorAll('.filter').forEach(el => {
-                if (event.target != el) {
-                    this.stateAllFilterDrop = false
-                    return
-                } else {
-                    this.stateAllFilterDrop = null
+        closeAllDrops() {
+            // this.$refs.navigator.querySelectorAll('.filter').forEach(el => {
+            //     console.log('Клик:', event.target, 'Фильтр:', el);
+            //     if (event.target != el) {
+            //         console.log('не равно');
+            //         for (let key in this.stateFiltersDrop) {
+            //             // console.log(key, this.stateFiltersDrop[key]);
+            //             this.stateFiltersDrop[key] = false
+            //         }
+            //         return
+            //     }
+            // })
+        },
+        changeStateFilters(type) {
+            for (let key in this.stateFiltersDrop) {
+                if (type == key) {
+                    this.stateFiltersDrop[key] = true
+                }else {
+                    this.stateFiltersDrop[key] = false
                 }
-            })
+            }
         },
         changeFilter(newFilter) {
             this.filters[newFilter.type] = newFilter.value
@@ -119,17 +139,24 @@ export default defineComponent({
             this.currentPage = 0
             this.films = []
 
-            API.getAllPages(type, cat, '', year).then(res => this.totalPages = res)
-            setTimeout(() => {
+            API.getAllPages(type, cat, '', year).then(res => {
+                this.totalPages = res
                 this.getFilmsByPage(type, cat, year)
-            }, 200)
+            })
         },
         getFilmsByPage(type, cat, year) {
             if (this.currentPage == this.totalPages && this.totalPages != 0) {
                 return
             }
             this.currentPage += 1
-            API.getAll(type, this.currentPage, cat, '', year).then(res => this.films.push(...res.results))
+            API.getAll(type, this.currentPage, cat, '', year).then(res => {
+                if (res.error) {
+                    this.notFound = true
+                }else {
+                    this.notFound = false
+                    this.films.push(...res.results)
+                }
+            })
             this.loading = false
         },
         trackPos() {
@@ -178,14 +205,6 @@ export default defineComponent({
 <style lang="scss" scoped>
 .wrapper {
     margin-top: 70px;
-
-    .title {
-        text-align: center;
-        padding: 2rem;
-        margin: 2rem 0;
-        border-radius: 0.5rem;
-        border: 1px solid #242424;
-    }
 
     .filters {
         position: relative;
